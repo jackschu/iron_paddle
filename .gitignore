@@ -89,3 +89,7 @@ flycheck_*.el
 # creds
 
 credentials/
+
+# Added by cargo
+
+/target
