@@ -1,13 +1,15 @@
 use bevy::core::Zeroable;
 use bevy::log::LogPlugin;
+use bevy::prelude::*;
+use bevy::utils::HashMap;
 use bevy::window::PrimaryWindow;
-use bevy::{prelude::*, sprite::MaterialMesh2dBundle};
 use bevy_ggrs::{
-    AddRollbackCommandExtension, GgrsPlugin, GgrsSchedule, PlayerInputs, Rollback, Session,
+    AddRollbackCommandExtension, GgrsApp, GgrsConfig, GgrsPlugin, GgrsSchedule, LocalInputs,
+    LocalPlayers, PlayerInputs, ReadInputs, Rollback, Session,
 };
 use bevy_matchbox::prelude::*;
 use bytemuck::Pod;
-use ggrs::{Config, PlayerHandle, SessionBuilder};
+use ggrs::SessionBuilder;
 
 /// We will store the world position of the mouse cursor here.
 #[derive(Resource, Default)]
@@ -45,16 +47,7 @@ pub struct BoxInput {
     pub inp2: i64,
 }
 
-/// You need to define a config struct to bundle all the generics of GGRS. You can safely ignore
-/// `State` and leave it as u8 for all GGRS functionality.
-/// TODO: Find a way to hide the state type.
-#[derive(Debug)]
-pub struct GGRSConfig;
-impl Config for GGRSConfig {
-    type Input = BoxInput;
-    type State = u8;
-    type Address = PeerId;
-}
+pub type GGRSConfig = GgrsConfig<BoxInput, PeerId>;
 
 #[derive(Debug, Clone, Default, Eq, PartialEq, Hash, States)]
 enum AppState {
@@ -73,45 +66,37 @@ fn main() {
     let args = Args::default();
     let mut app = App::new();
 
-    GgrsPlugin::<GGRSConfig>::new()
-        // define frequency of rollback game logic update
-        .with_update_frequency(FPS)
-        // define system that returns inputs given a player handle, so GGRS can send the inputs
-        // around
-        .with_input_system(my_cursor_system)
-        // register types of components AND resources you want to be rolled back
-        .register_rollback_component::<Transform>()
-        //        .register_rollback_component::<Velocity>()
-        //        .register_rollback_resource::<FrameCount>()
-        // make it happen in the bevy app
-        .build(&mut app);
-
-    app.add_plugins(
-        DefaultPlugins
-            .set(LogPlugin {
-                filter: "info,wgpu_core=warn,wgpu_hal=warn,matchbox_socket=debug".into(),
-                level: bevy::log::Level::DEBUG,
-            })
-            .set(WindowPlugin {
-                primary_window: Some(Window {
-                    fit_canvas_to_parent: true, // behave on wasm
+    app.add_plugins(GgrsPlugin::<GGRSConfig>::default())
+        .set_rollback_schedule_fps(FPS)
+        .add_systems(ReadInputs, my_cursor_system)
+        .rollback_component_with_clone::<Transform>()
+        .add_plugins(
+            DefaultPlugins
+                .set(LogPlugin {
+                    filter: "info,wgpu_core=warn,wgpu_hal=warn,matchbox_socket=debug".into(),
+                    level: bevy::log::Level::DEBUG,
+                })
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        fit_canvas_to_parent: true, // behave on wasm
+                        prevent_default_event_handling: false,
+                        ..default()
+                    }),
                     ..default()
                 }),
-                ..default()
-            }),
-    )
-    .insert_resource(args)
-    .add_state::<AppState>()
-    .add_systems(
-        OnEnter(AppState::Lobby),
-        (lobby_startup, start_matchbox_socket),
-    )
-    .add_systems(Update, lobby_system.run_if(in_state(AppState::Lobby)))
-    .add_systems(OnExit(AppState::Lobby), lobby_cleanup)
-    .add_systems(OnEnter(AppState::InGame), setup_scene_system)
-    .add_systems(Update, log_ggrs_events.run_if(in_state(AppState::InGame)))
-    .add_systems(GgrsSchedule, paddle_movement)
-    .run();
+        )
+        .insert_resource(args)
+        .add_state::<AppState>()
+        .add_systems(
+            OnEnter(AppState::Lobby),
+            (lobby_startup, start_matchbox_socket),
+        )
+        .add_systems(Update, lobby_system.run_if(in_state(AppState::Lobby)))
+        .add_systems(OnExit(AppState::Lobby), lobby_cleanup)
+        .add_systems(OnEnter(AppState::InGame), setup_scene_system)
+        .add_systems(Update, log_ggrs_events.run_if(in_state(AppState::InGame)))
+        .add_systems(GgrsSchedule, paddle_movement)
+        .run();
 }
 
 fn lobby_startup(mut commands: Commands) {
@@ -190,7 +175,7 @@ fn lobby_system(
     let mut sess_build = SessionBuilder::<GGRSConfig>::new()
         .with_num_players(args.players)
         .with_max_prediction_window(max_prediction)
-        //        .expect("REASON")
+        .expect("REASON")
         .with_input_delay(2)
         .with_fps(FPS)
         .expect("invalid fps");
@@ -248,7 +233,7 @@ struct Ball;
 fn setup_scene_system(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
     session: Res<Session<GGRSConfig>>,
 ) {
     let num_players = match &*session {
@@ -261,9 +246,9 @@ fn setup_scene_system(
 
     // Circle
     commands.spawn((
-        MaterialMesh2dBundle {
+        PbrBundle {
             mesh: meshes.add(shape::Circle::new(50.).into()).into(),
-            material: materials.add(ColorMaterial::from(Color::PURPLE)),
+            material: materials.add(Color::PURPLE.into()),
             transform: Transform::from_translation(Vec3::new(-150., 0., 0.)),
             ..default()
         },
@@ -294,13 +279,24 @@ fn setup_scene_system(
 }
 
 fn my_cursor_system(
-    _handle: In<PlayerHandle>,
+    mut commands: Commands,
     // query to get the window (so we can read the current cursor position)
     q_window: Query<&Window, With<PrimaryWindow>>,
     // query to get camera transform
     q_camera: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
-) -> BoxInput {
-    let default = BoxInput { inp: 0, inp2: 0 };
+    local_players: Res<LocalPlayers>,
+) {
+    let mut local_inputs = HashMap::new();
+    for handle in &local_players.0 {
+        local_inputs.insert(
+            *handle,
+            BoxInput {
+                inp: 0 as i64,
+                inp2: 0 as i64,
+            },
+        );
+    }
+
     // get the camera info and transform
     // assuming there is exactly one main camera entity, so Query::single() is OK
     if let Ok((camera, camera_transform)) = q_camera.get_single() {
@@ -314,17 +310,21 @@ fn my_cursor_system(
             .and_then(|cursor| camera.viewport_to_world(camera_transform, cursor))
             .map(|ray| ray.origin.truncate())
         {
-            BoxInput {
-                inp: (world_position.x * 1000.0).floor() as i64,
-                inp2: (world_position.y * 1000.0).floor() as i64,
+            for handle in &local_players.0 {
+                local_inputs.insert(
+                    *handle,
+                    BoxInput {
+                        inp: (world_position.x * 1000.0).floor() as i64,
+                        inp2: (world_position.y * 1000.0).floor() as i64,
+                    },
+                );
             }
-        } else {
-            return default;
         }
-    } else {
-        return default;
     }
+
+    commands.insert_resource(LocalInputs::<GGRSConfig>(local_inputs));
 }
+
 /// The sprite is animated by changing its translation depending on the time that has passed since
 /// the last frame.
 fn paddle_movement(
