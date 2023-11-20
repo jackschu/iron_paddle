@@ -1,8 +1,8 @@
-use bevy::core::Zeroable;
 use bevy::log::LogPlugin;
 use bevy::prelude::*;
 use bevy::utils::HashMap;
 use bevy::window::PrimaryWindow;
+use bevy::{core::Zeroable, sprite::MaterialMesh2dBundle};
 use bevy_ggrs::{
     AddRollbackCommandExtension, GgrsApp, GgrsConfig, GgrsPlugin, GgrsSchedule, LocalInputs,
     LocalPlayers, PlayerInputs, ReadInputs, Rollback, Session,
@@ -233,7 +233,7 @@ struct Ball;
 fn setup_scene_system(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
     session: Res<Session<GGRSConfig>>,
 ) {
     let num_players = match &*session {
@@ -246,7 +246,7 @@ fn setup_scene_system(
 
     // Circle
     commands.spawn((
-        PbrBundle {
+        MaterialMesh2dBundle {
             mesh: meshes.add(shape::Circle::new(50.).into()).into(),
             material: materials.add(Color::PURPLE.into()),
             transform: Transform::from_translation(Vec3::new(-150., 0., 0.)),
