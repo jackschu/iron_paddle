@@ -18,10 +18,6 @@ mod input;
 #[derive(Resource, Default)]
 struct MyWorldCoords(Vec2);
 
-/// Used to help identify our main camera
-#[derive(Component)]
-pub struct MainCamera;
-
 const FPS: usize = 60;
 
 #[derive(Debug, Clone, Resource)]
@@ -218,7 +214,7 @@ fn start_matchbox_socket(mut commands: Commands, args: Res<Args>) {
 
 #[derive(Component)]
 struct Ball;
-const GRID_WIDTH: f32 = 0.05;
+const GRID_WIDTH: f32 = 4.0;
 
 fn setup_scene_system(
     mut commands: Commands,
@@ -264,7 +260,7 @@ fn setup_scene_system(
                         color: if handle == 0 {
                             Color::rgba(0.25, 0.25, 0.75, 0.50)
                         } else {
-                            Color::MAROON
+                            Color::rgba(0.25, 0.75, 0.75, 0.50)
                         },
                         custom_size: Some(Vec2::new(50.0, 100.0)),
                         ..default()
