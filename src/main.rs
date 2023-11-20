@@ -1,15 +1,18 @@
 use bevy::log::LogPlugin;
 use bevy::prelude::*;
-use bevy::utils::HashMap;
-use bevy::window::PrimaryWindow;
-use bevy::{core::Zeroable, sprite::MaterialMesh2dBundle};
+
+use bevy::sprite::MaterialMesh2dBundle;
 use bevy_ggrs::{
-    AddRollbackCommandExtension, GgrsApp, GgrsConfig, GgrsPlugin, GgrsSchedule, LocalInputs,
-    LocalPlayers, PlayerInputs, ReadInputs, Rollback, Session,
+    AddRollbackCommandExtension, GgrsApp, GgrsPlugin, GgrsSchedule, ReadInputs, Session,
 };
 use bevy_matchbox::prelude::*;
-use bytemuck::Pod;
+
+use components::*;
 use ggrs::SessionBuilder;
+use input::*;
+
+mod components;
+mod input;
 
 /// We will store the world position of the mouse cursor here.
 #[derive(Resource, Default)]
@@ -17,7 +20,7 @@ struct MyWorldCoords(Vec2);
 
 /// Used to help identify our main camera
 #[derive(Component)]
-struct MainCamera;
+pub struct MainCamera;
 
 const FPS: usize = 60;
 
@@ -39,15 +42,6 @@ impl Default for Args {
         }
     }
 }
-
-#[repr(C)]
-#[derive(Copy, Clone, PartialEq, Eq, Pod, Zeroable, Debug)]
-pub struct BoxInput {
-    pub inp: i64,
-    pub inp2: i64,
-}
-
-pub type GGRSConfig = GgrsConfig<BoxInput, PeerId>;
 
 #[derive(Debug, Clone, Default, Eq, PartialEq, Hash, States)]
 enum AppState {
@@ -222,13 +216,9 @@ fn start_matchbox_socket(mut commands: Commands, args: Res<Args>) {
     commands.insert_resource(MatchboxSocket::new_ggrs(room_url));
 }
 
-#[derive(Default, Component)]
-struct Paddle {
-    pub handle: usize,
-}
-
 #[derive(Component)]
 struct Ball;
+const GRID_WIDTH: f32 = 0.05;
 
 fn setup_scene_system(
     mut commands: Commands,
@@ -255,6 +245,16 @@ fn setup_scene_system(
         Ball,
     ));
 
+    commands.spawn(SpriteBundle {
+        transform: Transform::from_translation(Vec3::new(0., 100., 0.)),
+        sprite: Sprite {
+            color: Color::GREEN,
+            custom_size: Some(Vec2::new(40.0, GRID_WIDTH)),
+            ..default()
+        },
+        ..default()
+    });
+
     for handle in 0..num_players {
         // Rectangle
         commands
@@ -275,65 +275,5 @@ fn setup_scene_system(
                 Paddle { handle },
             ))
             .add_rollback();
-    }
-}
-
-fn my_cursor_system(
-    mut commands: Commands,
-    // query to get the window (so we can read the current cursor position)
-    q_window: Query<&Window, With<PrimaryWindow>>,
-    // query to get camera transform
-    q_camera: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
-    local_players: Res<LocalPlayers>,
-) {
-    let mut local_inputs = HashMap::new();
-    for handle in &local_players.0 {
-        local_inputs.insert(
-            *handle,
-            BoxInput {
-                inp: 0 as i64,
-                inp2: 0 as i64,
-            },
-        );
-    }
-
-    // get the camera info and transform
-    // assuming there is exactly one main camera entity, so Query::single() is OK
-    if let Ok((camera, camera_transform)) = q_camera.get_single() {
-        // There is only one primary window, so we can similarly get it from the query:
-        let window = q_window.single();
-
-        // check if the cursor is inside the window and get its position
-        // then, ask bevy to convert into world coordinates, and truncate to discard Z
-        if let Some(world_position) = window
-            .cursor_position()
-            .and_then(|cursor| camera.viewport_to_world(camera_transform, cursor))
-            .map(|ray| ray.origin.truncate())
-        {
-            for handle in &local_players.0 {
-                local_inputs.insert(
-                    *handle,
-                    BoxInput {
-                        inp: (world_position.x * 1000.0).floor() as i64,
-                        inp2: (world_position.y * 1000.0).floor() as i64,
-                    },
-                );
-            }
-        }
-    }
-
-    commands.insert_resource(LocalInputs::<GGRSConfig>(local_inputs));
-}
-
-/// The sprite is animated by changing its translation depending on the time that has passed since
-/// the last frame.
-fn paddle_movement(
-    mut query: Query<(&mut Transform, &mut Paddle), With<Rollback>>,
-    inputs: Res<PlayerInputs<GGRSConfig>>,
-) {
-    for (mut transform, p) in query.iter_mut() {
-        let input = inputs[p.handle].0;
-        transform.translation.x = (input.inp as f32) / 1000.0;
-        transform.translation.y = (input.inp2 as f32) / 1000.0;
     }
 }
