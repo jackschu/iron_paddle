@@ -9,10 +9,13 @@ use bevy_matchbox::prelude::*;
 
 use components::*;
 use ggrs::SessionBuilder;
+use grid::*;
 use input::*;
 
 mod components;
+mod grid;
 mod input;
+mod util;
 
 /// We will store the world position of the mouse cursor here.
 #[derive(Resource, Default)]
@@ -69,7 +72,7 @@ fn main() {
                 .set(WindowPlugin {
                     primary_window: Some(Window {
                         fit_canvas_to_parent: true, // behave on wasm
-                        prevent_default_event_handling: false,
+                        prevent_default_event_handling: true,
                         ..default()
                     }),
                     ..default()
@@ -84,6 +87,7 @@ fn main() {
         .add_systems(Update, lobby_system.run_if(in_state(AppState::Lobby)))
         .add_systems(OnExit(AppState::Lobby), lobby_cleanup)
         .add_systems(OnEnter(AppState::InGame), setup_scene_system)
+        .add_systems(OnEnter(AppState::InGame), setup_grid_system)
         .add_systems(Update, log_ggrs_events.run_if(in_state(AppState::InGame)))
         .add_systems(GgrsSchedule, paddle_movement)
         .run();

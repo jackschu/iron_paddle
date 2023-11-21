@@ -24,6 +24,7 @@ pub fn my_cursor_system(
     q_window: Query<&Window, With<PrimaryWindow>>,
     // query to get camera transform
     q_camera: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
+    touches: Res<Touches>,
     local_players: Res<LocalPlayers>,
 ) {
     let mut local_inputs = HashMap::new();
@@ -43,10 +44,14 @@ pub fn my_cursor_system(
         // There is only one primary window, so we can similarly get it from the query:
         let window = q_window.single();
 
+        let mut initial_pos = window.cursor_position();
+        for finger in touches.iter() {
+            initial_pos = Some(finger.position());
+        }
+
         // check if the cursor is inside the window and get its position
         // then, ask bevy to convert into world coordinates, and truncate to discard Z
-        if let Some(world_position) = window
-            .cursor_position()
+        if let Some(world_position) = initial_pos
             .and_then(|cursor| camera.viewport_to_world(camera_transform, cursor))
             .map(|ray| ray.origin.truncate())
         {
