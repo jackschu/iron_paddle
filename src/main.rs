@@ -14,7 +14,6 @@ use ggrs::{PlayerType, SessionBuilder};
 use grid::*;
 use input::*;
 use physics::*;
-use util::scale_project;
 
 mod components;
 mod grid;
@@ -26,7 +25,7 @@ mod util;
 #[derive(Resource, Default)]
 struct MyWorldCoords(Vec2);
 
-/// true iff player exists at 800
+/// true iff player exists at DEPTH
 #[derive(Resource)]
 pub struct IsDeepPlayer(bool);
 
@@ -72,6 +71,7 @@ fn main() {
         .set_rollback_schedule_fps(FPS)
         .add_systems(ReadInputs, my_cursor_system)
         .rollback_component_with_clone::<Transform>()
+        .rollback_component_with_copy::<Ball>()
         .add_plugins(
             DefaultPlugins
                 .set(LogPlugin {
@@ -101,7 +101,11 @@ fn main() {
         .add_systems(Update, log_ggrs_events.run_if(in_state(AppState::InGame)))
         .add_systems(
             GgrsSchedule,
-            (paddle_movement, ball_movement.after(paddle_movement)),
+            (
+                paddle_movement,
+                ball_movement.after(paddle_movement),
+                update_depth_indicator.after(ball_movement),
+            ),
         )
         .run();
 }
@@ -268,9 +272,9 @@ fn setup_scene_system(
                     z: 400.,
                 },
                 speed: Vec3 {
-                    x: 0.,
-                    y: 0.,
-                    z: -20.,
+                    x: 150.,
+                    y: 200.,
+                    z: -400.,
                 },
             },
         ))
@@ -282,9 +286,9 @@ fn setup_scene_system(
                 SpriteBundle {
                     sprite: Sprite {
                         color: if handle == 0 {
-                            Color::rgba(0.25, 0.25, 0.75, 0.50)
+                            Color::rgba(0.25, 0.25, 0.75, 0.20)
                         } else {
-                            Color::rgba(0.25, 0.75, 0.75, 0.50)
+                            Color::rgba(0.25, 0.75, 0.75, 0.20)
                         },
                         custom_size: Some(Vec2::new(100.0, 50.0)),
                         ..default()
