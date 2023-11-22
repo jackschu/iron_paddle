@@ -2810,6 +2810,7 @@ dependencies = [
  "bevy_prototype_lyon",
  "bytemuck",
  "ggrs",
+ "wasm-bindgen",
 ]
 
 [[package]]

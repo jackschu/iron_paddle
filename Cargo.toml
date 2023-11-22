@@ -12,6 +12,7 @@ bevy_matchbox = { version = "0.8.0", features = ["ggrs"] }
 bevy_prototype_lyon = "0.10.0"
 bytemuck = { version = "1.7", features = ["derive"] }
 ggrs = "0.10"
+wasm-bindgen = "0.2.88"
 
 
 # Enable a small amount of optimization in debug mode

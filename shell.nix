@@ -3,6 +3,9 @@
 with pkgs;
 
 mkShell rec {
+  packages = [
+    pkgs.binaryen
+  ];
   nativeBuildInputs = [
     pkg-config
   ];

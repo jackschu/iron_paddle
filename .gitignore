@@ -151,3 +151,5 @@ $RECYCLE.BIN/
 temp.nix
 *.replay
 
+# build wasm
+/out

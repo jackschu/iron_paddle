@@ -1,5 +1,7 @@
 use bevy::log::LogPlugin;
 use bevy::prelude::*;
+use wasm_bindgen::prelude::*;
+
 use bevy_prototype_lyon::prelude::*;
 
 use bevy::sprite::MaterialMesh2dBundle;
@@ -63,6 +65,11 @@ struct LobbyText;
 struct LobbyUI;
 
 fn main() {
+    run();
+}
+
+#[wasm_bindgen]
+pub fn run() {
     // todo can get from query string?
     let args = Args::default();
     let mut app = App::new();
