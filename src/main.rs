@@ -10,19 +10,25 @@ use bevy_ggrs::{
 use bevy_matchbox::prelude::*;
 
 use components::*;
-use ggrs::SessionBuilder;
+use ggrs::{PlayerType, SessionBuilder};
 use grid::*;
 use input::*;
+use physics::*;
 use util::scale_project;
 
 mod components;
 mod grid;
 mod input;
+mod physics;
 mod util;
 
 /// We will store the world position of the mouse cursor here.
 #[derive(Resource, Default)]
 struct MyWorldCoords(Vec2);
+
+/// true iff player exists at 800
+#[derive(Resource)]
+pub struct IsDeepPlayer(bool);
 
 const FPS: usize = 60;
 
@@ -93,7 +99,10 @@ fn main() {
         .add_systems(OnEnter(AppState::InGame), setup_scene_system)
         .add_systems(OnEnter(AppState::InGame), setup_grid_system)
         .add_systems(Update, log_ggrs_events.run_if(in_state(AppState::InGame)))
-        .add_systems(GgrsSchedule, paddle_movement)
+        .add_systems(
+            GgrsSchedule,
+            (paddle_movement, ball_movement.after(paddle_movement)),
+        )
         .run();
 }
 
@@ -167,6 +176,15 @@ fn lobby_system(
     // extract final player list
     let players = socket.players();
 
+    let lowest_player = socket.connected_peers().min_by(|l, r| l.0.cmp(&r.0));
+    let maybe_own_id = socket.id();
+
+    if maybe_own_id.is_none() {
+        return;
+    }
+    let own_id = maybe_own_id.unwrap();
+    commands.insert_resource(IsDeepPlayer(own_id < lowest_player.unwrap()));
+
     let max_prediction = 12;
 
     // create a GGRS P2P session
@@ -235,15 +253,28 @@ fn setup_scene_system(
     commands.spawn((Camera2dBundle::default(), MainCamera));
 
     // Circle
-    commands.spawn((
-        MaterialMesh2dBundle {
-            mesh: meshes.add(shape::Circle::new(50.).into()).into(),
-            material: materials.add(Color::PURPLE.into()),
-            transform: Transform::from_translation(Vec3::new(-150., 0., 0.)),
-            ..default()
-        },
-        Ball,
-    ));
+    commands
+        .spawn((
+            MaterialMesh2dBundle {
+                mesh: meshes.add(shape::Circle::new(50.).into()).into(),
+                material: materials.add(Color::PURPLE.into()),
+                transform: Transform::from_translation(Vec3::new(-150., 0., 0.)),
+                ..default()
+            },
+            Ball {
+                pos: Vec3 {
+                    x: 0.,
+                    y: 0.,
+                    z: 400.,
+                },
+                speed: Vec3 {
+                    x: 0.,
+                    y: 0.,
+                    z: -20.,
+                },
+            },
+        ))
+        .add_rollback();
     for handle in 0..num_players {
         // Rectangle
         commands
