@@ -4,16 +4,16 @@ use bevy_prototype_lyon::prelude::*;
 
 use bevy::sprite::MaterialMesh2dBundle;
 use bevy_ggrs::{
-    AddRollbackCommandExtension, GgrsApp, GgrsPlugin, GgrsSchedule, LocalPlayers, ReadInputs,
-    Session,
+    AddRollbackCommandExtension, GgrsApp, GgrsPlugin, GgrsSchedule, ReadInputs, Session,
 };
 use bevy_matchbox::prelude::*;
 
 use components::*;
-use ggrs::{PlayerType, SessionBuilder};
+use ggrs::SessionBuilder;
 use grid::*;
 use input::*;
 use physics::*;
+use util::Z_BALL;
 
 mod components;
 mod grid;
@@ -262,7 +262,7 @@ fn setup_scene_system(
             MaterialMesh2dBundle {
                 mesh: meshes.add(shape::Circle::new(50.).into()).into(),
                 material: materials.add(Color::PURPLE.into()),
-                transform: Transform::from_translation(Vec3::new(-150., 0., 0.)),
+                transform: Transform::from_translation(Vec3::new(-150., 0., Z_BALL)),
                 ..default()
             },
             Ball {
@@ -292,7 +292,7 @@ fn setup_scene_system(
                         },
                         custom_size: Some(Vec2::new(100.0, 50.0)),
                         ..default()
-                    }, // TODO move transfor
+                    },
                     transform: Transform::from_translation(Vec3::new(-50., 0., 0.)),
                     ..default()
                 },

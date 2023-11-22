@@ -7,7 +7,7 @@ use bevy_ggrs::{GgrsConfig, LocalInputs, LocalPlayers, PlayerInputs, Rollback};
 use bevy_matchbox::prelude::PeerId;
 use bytemuck::Pod;
 
-use crate::util::{scale_project, DEPTH};
+use crate::util::{scale_project, DEPTH, Z_OTHER_PADDLE, Z_OWN_PADDLE};
 use crate::{components::Paddle, MainCamera};
 
 #[repr(C)]
@@ -90,7 +90,11 @@ pub fn paddle_movement(
         transform.translation.y = scale_project((input.inp2 as f32) / 1000.0, depth, false);
 
         // TODO: move this stuff to some setup phase?
-        transform.translation.z = if is_self { 1. } else { -1. };
+        transform.translation.z = if is_self {
+            Z_OWN_PADDLE
+        } else {
+            Z_OTHER_PADDLE
+        };
         sprite.custom_size = Some(Vec2::new(
             scale_project(200.0, depth, false),
             scale_project(150.0, depth, false),

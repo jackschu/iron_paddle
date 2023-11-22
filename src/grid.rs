@@ -4,7 +4,7 @@ use bevy_prototype_lyon::prelude::*;
 
 use crate::{
     components::{Ball, DepthIndicator},
-    util::{point_project, scale_project, DEPTH},
+    util::{point_project, scale_project, DEPTH, Z_DEPTH_INDICATOR, Z_GRID},
     IsDeepPlayer,
 };
 
@@ -16,7 +16,7 @@ pub fn setup_grid_system(mut commands: Commands, q_window: Query<&Window, With<P
         ShapeBundle {
             path,
             spatial: SpatialBundle {
-                transform: Transform::from_xyz(0., 0., -10.),
+                transform: Transform::from_xyz(0., 0., Z_DEPTH_INDICATOR),
                 ..default()
             },
             ..default()
@@ -31,7 +31,7 @@ pub fn setup_grid_system(mut commands: Commands, q_window: Query<&Window, With<P
             ShapeBundle {
                 path,
                 spatial: SpatialBundle {
-                    transform: Transform::from_xyz(0., 0., -10.),
+                    transform: Transform::from_xyz(0., 0., Z_GRID),
                     ..default()
                 },
                 ..default()
@@ -57,7 +57,7 @@ pub fn setup_grid_system(mut commands: Commands, q_window: Query<&Window, With<P
             ShapeBundle {
                 path,
                 spatial: SpatialBundle {
-                    transform: Transform::from_xyz(0., 0., -10.),
+                    transform: Transform::from_xyz(0., 0., Z_GRID),
                     ..default()
                 },
                 ..default()

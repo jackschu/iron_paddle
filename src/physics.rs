@@ -33,9 +33,7 @@ pub fn ball_movement(
     ball.pos.z += ball.speed.z * ds;
     transform.translation.x = scale_project(ball.pos.x, ball.pos.z, is_deep.0);
     transform.translation.y = scale_project(ball.pos.y, ball.pos.z, is_deep.0);
-    info!("ball pos {} {} {}", ball.pos.y, ball.speed.y, ds);
 
     let scale = scale_project(1., ball.pos.z, is_deep.0);
-
     transform.scale = (scale, scale, scale).into();
 }
