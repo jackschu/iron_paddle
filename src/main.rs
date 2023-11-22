@@ -4,7 +4,8 @@ use bevy_prototype_lyon::prelude::*;
 
 use bevy::sprite::MaterialMesh2dBundle;
 use bevy_ggrs::{
-    AddRollbackCommandExtension, GgrsApp, GgrsPlugin, GgrsSchedule, ReadInputs, Session,
+    AddRollbackCommandExtension, GgrsApp, GgrsPlugin, GgrsSchedule, LocalPlayers, ReadInputs,
+    Session,
 };
 use bevy_matchbox::prelude::*;
 
@@ -257,13 +258,9 @@ fn setup_scene_system(
                         } else {
                             Color::rgba(0.25, 0.75, 0.75, 0.50)
                         },
-                        custom_size: Some(if handle == 0 {
-                            Vec2::new(100.0, 50.0)
-                        } else {
-                            Vec2::new(scale_project(100., 800.), scale_project(50., 800.))
-                        }),
+                        custom_size: Some(Vec2::new(100.0, 50.0)),
                         ..default()
-                    },
+                    }, // TODO move transfor
                     transform: Transform::from_translation(Vec3::new(-50., 0., 0.)),
                     ..default()
                 },

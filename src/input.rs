@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::HashSet};
 
 use bevy::core::Zeroable;
 use bevy::utils::HashMap;
@@ -7,6 +7,7 @@ use bevy_ggrs::{GgrsConfig, LocalInputs, LocalPlayers, PlayerInputs, Rollback};
 use bevy_matchbox::prelude::PeerId;
 use bytemuck::Pod;
 
+use crate::util::scale_project;
 use crate::{components::Paddle, MainCamera};
 
 #[repr(C)]
@@ -73,12 +74,26 @@ pub fn my_cursor_system(
 /// The sprite is animated by changing its translation depending on the time that has passed since
 /// the last frame.
 pub fn paddle_movement(
-    mut query: Query<(&mut Transform, &mut Paddle), With<Rollback>>,
+    mut query: Query<(&mut Sprite, &mut Transform, &mut Paddle), With<Rollback>>,
     inputs: Res<PlayerInputs<GGRSConfig>>,
+    local_players: Res<LocalPlayers>,
 ) {
-    for (mut transform, p) in query.iter_mut() {
+    let mut set = HashSet::default();
+    for handle in &local_players.0 {
+        set.insert(handle);
+    }
+    for (mut sprite, mut transform, p) in query.iter_mut() {
+        let is_self = set.contains(&p.handle);
+        let depth = if is_self { 0. } else { 800. };
         let input = inputs[p.handle].0;
-        transform.translation.x = (input.inp as f32) / 1000.0;
-        transform.translation.y = (input.inp2 as f32) / 1000.0;
+        transform.translation.x = scale_project((input.inp as f32) / 1000.0, depth);
+        transform.translation.y = scale_project((input.inp2 as f32) / 1000.0, depth);
+
+        // TODO: move this stuff to some setup phase?
+        transform.translation.z = if is_self { 1. } else { -1. };
+        sprite.custom_size = Some(Vec2::new(
+            scale_project(100.0, depth),
+            scale_project(50.0, depth),
+        ));
     }
 }
