@@ -92,8 +92,8 @@ pub fn paddle_movement(
         // TODO: move this stuff to some setup phase?
         transform.translation.z = if is_self { 1. } else { -1. };
         sprite.custom_size = Some(Vec2::new(
-            scale_project(100.0, depth),
-            scale_project(50.0, depth),
+            scale_project(200.0, depth),
+            scale_project(150.0, depth),
         ));
     }
 }

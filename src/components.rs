@@ -7,3 +7,6 @@ pub struct Paddle {
 /// Used to help identify our main camera
 #[derive(Component)]
 pub struct MainCamera;
+
+#[derive(Component)]
+pub struct Ball;

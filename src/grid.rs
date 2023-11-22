@@ -17,7 +17,30 @@ pub fn setup_grid_system(mut commands: Commands, q_window: Query<&Window, With<P
                 },
                 ..default()
             },
-            Stroke::new(Color::GREEN, scale_project(10.0, i as f32 * 100.)),
+            Stroke::new(Color::GREEN, scale_project(4., i as f32 * 100.)),
+        ));
+    }
+    let dx: [f32; 4] = [-1., 1., 1., -1.];
+    let dy: [f32; 4] = [1., 1., -1., -1.];
+    for i in 0..4 {
+        let x = window.width() / 2. * dx[i];
+        let y = window.height() / 2. * dy[i];
+        let (xp, yp) = point_project(x, y, 800.);
+        let mut path_builder = PathBuilder::new();
+        path_builder.move_to(Vec2::new(x, y));
+        path_builder.line_to(Vec2::new(xp, yp));
+        path_builder.close();
+        let path = path_builder.build();
+        commands.spawn((
+            ShapeBundle {
+                path,
+                spatial: SpatialBundle {
+                    transform: Transform::from_xyz(0., 0., -10.),
+                    ..default()
+                },
+                ..default()
+            },
+            Stroke::new(Color::GREEN, 3.),
         ));
     }
 }

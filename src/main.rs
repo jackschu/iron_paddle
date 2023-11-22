@@ -220,9 +220,6 @@ fn start_matchbox_socket(mut commands: Commands, args: Res<Args>) {
     commands.insert_resource(MatchboxSocket::new_ggrs(room_url));
 }
 
-#[derive(Component)]
-struct Ball;
-
 fn setup_scene_system(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
