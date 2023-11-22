@@ -1,5 +1,6 @@
 use bevy::log::LogPlugin;
 use bevy::prelude::*;
+use bevy_prototype_lyon::prelude::*;
 
 use bevy::sprite::MaterialMesh2dBundle;
 use bevy_ggrs::{
@@ -11,6 +12,7 @@ use components::*;
 use ggrs::SessionBuilder;
 use grid::*;
 use input::*;
+use util::scale_project;
 
 mod components;
 mod grid;
@@ -78,6 +80,7 @@ fn main() {
                     ..default()
                 }),
         )
+        .add_plugins(ShapePlugin)
         .insert_resource(args)
         .add_state::<AppState>()
         .add_systems(
@@ -218,7 +221,6 @@ fn start_matchbox_socket(mut commands: Commands, args: Res<Args>) {
 
 #[derive(Component)]
 struct Ball;
-const GRID_WIDTH: f32 = 4.0;
 
 fn setup_scene_system(
     mut commands: Commands,
@@ -244,17 +246,6 @@ fn setup_scene_system(
         },
         Ball,
     ));
-
-    commands.spawn(SpriteBundle {
-        transform: Transform::from_translation(Vec3::new(0., 100., 0.)),
-        sprite: Sprite {
-            color: Color::GREEN,
-            custom_size: Some(Vec2::new(40.0, GRID_WIDTH)),
-            ..default()
-        },
-        ..default()
-    });
-
     for handle in 0..num_players {
         // Rectangle
         commands
@@ -266,7 +257,11 @@ fn setup_scene_system(
                         } else {
                             Color::rgba(0.25, 0.75, 0.75, 0.50)
                         },
-                        custom_size: Some(Vec2::new(50.0, 100.0)),
+                        custom_size: Some(if handle == 0 {
+                            Vec2::new(100.0, 50.0)
+                        } else {
+                            Vec2::new(scale_project(100., 800.), scale_project(50., 800.))
+                        }),
                         ..default()
                     },
                     transform: Transform::from_translation(Vec3::new(-50., 0., 0.)),

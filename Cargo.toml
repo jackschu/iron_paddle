@@ -9,6 +9,7 @@ edition = "2021"
 bevy = "0.12"
 bevy_ggrs = { version = "0.14", features = ["wasm-bindgen"] }
 bevy_matchbox = { version = "0.8.0", features = ["ggrs"] }
+bevy_prototype_lyon = "0.10.0"
 bytemuck = { version = "1.7", features = ["derive"] }
 ggrs = "0.10"
 
